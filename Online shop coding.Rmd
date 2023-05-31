@@ -1,0 +1,609 @@
+---
+title: "Purchase Intention"
+output:
+  pdf_document: default
+  html_document: default
+date: "2022-12-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Libraries**
+```{r}
+library(ggplot2)
+library(ggcorrplot) #Correlation Matrix
+library(dplyr)
+library(gridExtra)
+library(tidyverse)
+library(gridExtra)
+library(RColorBrewer)
+library(cowplot)
+library(lares)
+#install.packages("caret")
+library(caret) #data partition
+library(rpart)
+library(rpart.plot)
+```
+
+
+```{r}
+online_shoppers_intention = read.csv('C:\\Users\\ap02159\\OneDrive - University of Surrey\\Desktop\\Purchase Intention\\online_shoppers_intention.csv')
+onl=online_shoppers_intention
+onll = onl
+```
+
+```{r}
+onl1 = onll
+```
+
+
+**Finding Missing Values**
+```{r}
+colSums(is.na(onl1))
+```
+**Attributes and Observation**
+```{r}
+dim(onl1)
+```
+
+There is no missing values in the following data set and there are 12,330 Observation and 18 Attributes 
+# Structure of Dataset as per my requirement.
+
+**Identifying Duplicate Data**
+```{r}
+sum(duplicated(onl1))
+```
+
+**Remove the Duplicate and retrieve only the Unique variables.**
+```{r}
+onl1 = unique(onl1)
+sum(duplicated(onl1))
+
+onll = onl1
+```
+
+**Changing the Revenue and Weekend Observation**
+
+TRUE - 1
+FALSE - 0 
+
+```{r}
+onl1$Revenue = gsub(FALSE, 0, onl1$Revenue)
+onl1$Revenue = gsub(TRUE, 1, onl1$Revenue)
+
+onl1$Weekend = gsub(FALSE, 0, onl1$Weekend)
+onl1$Weekend = gsub(TRUE, 1, onl1$Weekend)
+
+```
+
+**Changing Weekend, Revenue, Month, Visitor Type to factorial**
+```{r}
+onl1$Weekend = as.factor(onl1$Weekend)
+onl1$Revenue = as.factor(onl1$Revenue)
+onl1$Month = as.factor(onl1$Month)
+onl1$VisitorType = as.factor(onl1$VisitorType)
+```
+
+**Operating System **
+
+The Operating System is in numerical and needs to be renamed based on Top 8 Operating system in 2022.
+```{r}
+onl1$OperatingSystems[onl1$OperatingSystems == 1] = "MS-Windows"
+onl1$OperatingSystems[onl1$OperatingSystems == 2] = "Ubuntu"
+onl1$OperatingSystems[onl1$OperatingSystems == 3] = "Mac OS"
+onl1$OperatingSystems[onl1$OperatingSystems == 4] = "Fedora"
+onl1$OperatingSystems[onl1$OperatingSystems == 5] = "Solaris"
+onl1$OperatingSystems[onl1$OperatingSystems == 6] = "Free BSD"
+onl1$OperatingSystems[onl1$OperatingSystems == 7] = "Chrome OS"
+onl1$OperatingSystems[onl1$OperatingSystems == 8] = "CentOS"
+```
+
+**Browser**
+
+The Browser is in numerical and needs to be renamed based on Top 15 browser in 2022. 
+```{r}
+onl1$Browser[onl1$Browser == 1] = "Safari"
+onl1$Browser[onl1$Browser == 2] = "Microsoft Edge"
+onl1$Browser[onl1$Browser == 3] = "Google Chrome"
+onl1$Browser[onl1$Browser == 4] = "Opera"
+onl1$Browser[onl1$Browser == 5] = "Firefox"
+onl1$Browser[onl1$Browser == 6] = "Brave"
+onl1$Browser[onl1$Browser == 7] = "Vivaldi"
+onl1$Browser[onl1$Browser == 8] = "Torch"
+onl1$Browser[onl1$Browser == 9] = "Avast Secure"
+onl1$Browser[onl1$Browser == 10] = "UR Browser"
+onl1$Browser[onl1$Browser == 11] = "Aloha Browser"
+onl1$Browser[onl1$Browser == 12] = "Epic Privacy Browser"
+onl1$Browser[onl1$Browser == 13] = "Slim Browser"
+
+```
+
+**Region**
+
+The region is in numerical and considering the considering the highest buying online region in 2022.
+```{r}
+onl1$Region[onl1$Region == 1] = "China"
+onl1$Region[onl1$Region == 2] = "United Kingdom"
+onl1$Region[onl1$Region == 3] = "South Korea"
+onl1$Region[onl1$Region == 4] = "Denmark"
+onl1$Region[onl1$Region == 5] = "Indonesia"
+onl1$Region[onl1$Region == 6] = "Norway"
+onl1$Region[onl1$Region == 7] = "United States"
+onl1$Region[onl1$Region == 8] = "Finland"
+onl1$Region[onl1$Region == 9] = "Sweden"
+```
+
+
+**Created new table with Revenue == 1**
+```{r}
+#Remove rows where gender not equal to 'm'
+db = subset(onl1,Revenue == 1 )
+#db
+```
+
+# Descprtive Analysis
+```{r}
+Revenue = ggplot(data=onl1, aes(x=Revenue, fill = Revenue)) +
+                   geom_bar() +
+                   geom_text(stat='count', aes(label=..count..), vjust=-1)+
+                   coord_cartesian(clip = "off")+
+                   theme_minimal()+
+                   theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                         legend.position = "bottom",
+                         plot.margin = margin(t = 20, r = 10, b = 10, l = 10))
+
+
+Revenue
+```
+```{r}
+library(scales)
+Revenue_prop = onl1 %>% 
+                   count(Revenue) %>% 
+                   mutate(prop = n/sum(n)) %>% 
+                   ggplot(aes(x = Revenue, y = prop, fill = Revenue)) +
+                   geom_col() +
+                   geom_text(aes(label = percent(prop)), vjust = -1) +
+                   coord_cartesian(clip = "off") +
+                   scale_y_continuous(scales::label_percent(accuracy = 1L)) +
+                   theme_minimal() +
+                   theme(legend.position = "bottom")
+
+Revenue_prop
+
+```
+
+
+```{r}
+VisitorType = ggplot(data=onl1, aes(x=VisitorType, fill = VisitorType)) +
+                   geom_bar() +
+                   geom_text(stat='count', aes(label=..count..), vjust=-1)+
+                   coord_cartesian(clip = "off")+
+                   theme_minimal()+
+                   theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                         legend.position = "bottom",
+                         plot.margin = margin(t = 20, r = 10, b = 10, l = 10))
+
+
+VisitorType
+```
+
+```{r}
+Weekend = ggplot(data=onl1, aes(x=Weekend, fill = Weekend)) +
+                   geom_bar() +
+                   geom_text(stat='count', aes(label=..count..), vjust=-1)+
+                   coord_cartesian(clip = "off")+
+                   theme_minimal()+
+                   theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                         legend.position = "bottom",
+                         plot.margin = margin(t = 20, r = 10, b = 10, l = 10))
+
+
+Weekend
+```
+
+**Operating System - Bar Graph** 
+```{r}
+Operating_system = ggplot(data=onl1, aes(x = OperatingSystems, fill = OperatingSystems)) +
+                   geom_bar() +
+                   geom_text(stat='count', aes(label=..count..), vjust=-1)+
+                   coord_cartesian(clip = "off")+
+                   theme_minimal()+
+                   theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                         legend.position = "bottom",
+                         plot.margin = margin(t = 20, r = 10, b = 10, l = 10)) 
+
+
+Operating_system
+```
+
+**Browser - Bar Graph** 
+```{r}
+Browser = ggplot(data=onl1, aes(x=Browser, fill = Browser)) +
+         geom_bar() +
+         geom_text(stat='count', aes(label=..count..), vjust=-1)+
+         coord_cartesian(clip = "off")+
+        theme_minimal()+
+        theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+              legend.position = "bottom",
+              plot.margin = margin(t = 20, r = 10, b = 10, l = 10))
+
+Browser
+```
+
+**Region - Bar Graph**
+```{r}
+Region = ggplot(data=onl1, aes(x=Region, fill = Region)) +
+         geom_bar() +
+         geom_text(stat='count', aes(label=..count..), vjust=-1)+
+         coord_cartesian(clip = "off")+
+        theme_minimal()+
+        theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+              legend.position = "bottom",
+              plot.margin = margin(t = 20, r = 10, b = 10, l = 10))
+
+Region
+```
+
+**Months Vs Special Days**
+```{r}
+MvsSD = ggplot(onl1, aes(x=Month, fill = as.factor(SpecialDay))) + 
+  geom_bar(position="dodge") + 
+  labs(y = "Count", 
+       x = "Months",
+       title = "Variable Months",
+       fill = "Special Day") +
+  scale_x_discrete(limits=c("Feb","Mar","May", "June","Aug","Sep","Oct","Nov","Dec"))+
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+MvsSD
+```
+
+**Summary of the data set**
+```{r}
+summary(onl1[,c(1:10)])
+```
+# Exploratory Analysis 
+
+**Time Series for Revenue based on Region**
+```{r}
+options(repr.plot.width = 7, repr.plot.height = 5)
+
+trend <- data.frame(table(onl1$Region, onl1$Revenue))
+names(trend) <- c("Region", "Revenue", "Frequency")
+
+RvsR = ggplot(data = trend, mapping = aes(x = Region , y = Frequency)) +
+       geom_line(mapping = aes(color = Revenue, group = Revenue), lwd = 1) +
+       geom_point(mapping = aes(color = Revenue, group = Revenue, size = 0.1), show.legend = FALSE) + 
+       scale_y_continuous(labels = scales::percent_format(scale = 0.01)) +
+       scale_x_discrete(limits=c("China","United Kingdom","South          Korea","Denmark","Indonesia","Norway","United States","Finland","Sweden")) +
+       labs(x = "Region",
+            fill = "Revenue",
+            y = "Percentage",
+            title = "Region Versus Revenue- Time Series" )+
+       theme_grey()+
+       theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+               legend.position = "bottom")
+
+RvsR
+```
+
+**Time Series for Visitor Type based on Region**
+```{r}
+trendRegion <- data.frame(table(db$Region, db$VisitorType))
+names(trendRegion) <- c("Region", "VisitorType", "Frequency")
+
+PvsR = ggplot(data = trendRegion, mapping = aes(x = Region, y = Frequency)) +
+       geom_line(mapping = aes(color = VisitorType, group = VisitorType), lwd = 1) +
+       geom_point(mapping = aes(color = VisitorType, group = VisitorType, size = 0.1), show.legend = FALSE) +
+       labs(x = "Region",
+            fill = "Revenue",
+            y = "Purchasing Customers",
+           title = "Purchasing Customers Vs Region - Time Series" )+
+       theme_grey()+
+       theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+              legend.position = "bottom")
+
+PvsR
+#grid.arrange(RvsR, d, ncol = 2, nrow = 1)
+```
+
+**Time Series for Visitor Type based on Operating Systems**
+```{r}
+trendOS <- data.frame(table(db$OperatingSystems, db$VisitorType))
+names(trendOS) <- c("OperatingSystems", "VisitorType", "Frequency")
+
+PvsOS = ggplot(data = trendOS, mapping = aes(x = OperatingSystems, y = Frequency)) +
+        geom_line(mapping = aes(color = VisitorType, group = VisitorType), lwd = 1) +
+        geom_point(mapping = aes(color = VisitorType, group = VisitorType, size = 0.1), show.legend = FALSE) +
+        scale_x_discrete(limits = c("MS-Windows","Ubuntu","Mac OS","Fedora","Solaris","Free BSD","Chrome OS","CentOS"))+
+        labs(x = "OperatingSystems",
+             fill = "Revenue",
+             y = "Purchasing Customers",
+             title = "Purchasing Customers Vs OperatingSystems - Time Series" )+
+        theme_grey()+
+        theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                legend.position = "bottom")
+
+PvsOS
+```
+
+**Time Series for Visitor Type based on Browser**
+```{r}
+trendBrowser <- data.frame(table(db$Browser, db$VisitorType))
+names(trendBrowser) <- c("Browser", "VisitorType", "Frequency")
+
+PvsB = ggplot(data = trendBrowser, mapping = aes(x = Browser, y = Frequency)) +
+       geom_line(mapping = aes(color = VisitorType, group = VisitorType), lwd = 1) +
+       geom_point(mapping = aes(color = VisitorType, group = VisitorType, size = 0.1), show.legend = FALSE) +
+       scale_x_discrete(limits = c("Safari","Microsoft Edge","Google Chrome","Opera","Firefox","Brave","Vivaldi","Torch","Avast Secure","UR Browser","Aloha Broswer","Epic Privacy Browser","Slim Broswer")) +
+       labs(x = "Browser",
+            fill = "Revenue",
+            y = "Purchasing Customers",
+            title = "Purchasing Customers Vs Browser - Time Series" ) +
+            theme_grey()+
+            theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1),
+                   legend.position = "bottom")
+PvsB
+```
+
+```{r}
+trendTrafficType <- data.frame(table(db$TrafficType, db$VisitorType))
+names(trendTrafficType) <- c("TrafficType", "VisitorType", "Frequency")
+PvsT = ggplot(data = trendTrafficType, mapping = aes(x = TrafficType, y = Frequency)) +
+  geom_line(mapping = aes(color = VisitorType, group = VisitorType), lwd = 1) +
+  geom_point(mapping = aes(color = VisitorType, group = VisitorType, size = 0.1), show.legend = FALSE) +
+  labs(x = "TrafficType",
+       fill = "Revenue",
+       y = "Purchasing Customers",
+       title = "Purchasing Customers Vs TrafficType - Time Series" )+
+    theme_grey()+
+  theme(legend.position = "bottom")
+
+PvsT
+```
+
+grid.arrange(RvsR, PvsT, PvsB, PvsOS, ncol = 2, nrow = 2)
+
+# Correlation Matrix  
+
+```{r}
+library(ggcorrplot)
+cor1 = onl
+cor1$Month = as.numeric(as.factor(cor1$Month))
+cor1$VisitorType = as.numeric(as.factor(cor1$VisitorType))
+cor1$Weekend = as.numeric(as.factor(cor1$Weekend))
+cor1$Revenue = as.numeric(cor1$Revenue)
+
+# Computing correlation matrix
+correlation_matrix <- round(cor(cor1),1)
+  
+# Computing correlation matrix with p-values
+corrp.mat <- cor_pmat(cor1)
+  
+# Adding correlation significance level
+ggcorrplot(correlation_matrix, hc.order =TRUE, 
+           type ="lower", lab =TRUE)
+
+```
+
+**Cross Correlation**
+```{r}
+cross.corr = corr_cross(onl1,max_pvalue = 0.05,top = 20)
+cross.corr
+```
+
+**Product Related Vs Product Related Duration** 
+```{r}
+PRDvsPR = ggplot(onl1) +
+  geom_smooth(aes(x = ProductRelated, y = ProductRelated_Duration, color = Revenue), alpha = 0.6) +
+  geom_point(aes(x = ProductRelated, y = ProductRelated_Duration, color = Revenue), alpha = 0.6,shape = 16) +
+  scale_color_brewer(palette = "Dark2") + 
+  theme_replace() +
+  theme(legend.position = "bottom") + 
+  labs(x = "Product Related", y = "Product Related Duration") 
+PRDvsPR
+```
+
+**Administrative vs Administrative Duration**
+```{r}
+PRDvsPR = ggplot(onl1) +
+  geom_smooth(aes(x = Administrative, y = Administrative_Duration, color = Revenue), alpha = 0.6) + 
+  geom_point(aes(x = Administrative, y = Administrative_Duration, color = Revenue), alpha = 0.6, shape = 16) +
+  scale_color_brewer(palette = "Dark2") + 
+  theme_replace() +
+  theme(legend.position = "bottom") + 
+  labs(x = "Administrative", y = "Administrative Duration") 
+PRDvsPR
+```
+
+**Informational vs Informational Duration**
+```{r}
+PRDvsPR = ggplot(onl1) +
+  geom_smooth(aes(x = Informational, y = Informational_Duration, color = Revenue), alpha = 0.6) + 
+  geom_point(aes(x = Informational, y = Informational_Duration, color = Revenue), alpha = 0.6, shape = 16) +
+  scale_color_brewer(palette = "Dark2") + 
+  theme_replace() +
+  theme(legend.position = "bottom") + 
+  labs(x = "Informational", y = "Informational Duration") 
+PRDvsPR
+```
+
+
+
+
+                                          MODELLING
+
+```{r}
+na.omit(onl)
+onl = unique(onl)
+sum(duplicated(onl))
+```
+
+
+```{r}
+#Analysis of variance
+onl2 = onl
+lg_mod = glm(Revenue ~. ,data=onl2,family = binomial(link = "logit"))
+
+anova(lg_mod,test = "Chisq")
+
+```                                          
+from the above table we see the significance of variance
+
+
+
+```{r}
+#creating new data with respect to feature selection
+fs = onl2
+fs = subset(fs, select = -c(Administrative_Duration,Informational_Duration,Region,TrafficType,Weekend) )
+```
+
+
+
+```{r}
+#NAIVE BAYES - model1
+fs$Revenue<- as.factor(fs$Revenue)
+
+splitting = createDataPartition(fs$Revenue, p=0.75, list=FALSE)
+train1 = fs[ splitting,]
+test1 = fs[-splitting,]
+
+#over sampling the dataset
+#install.packages("ROSE")
+library(ROSE)
+oversampling_onl = ovun.sample( Revenue ~ ., data = train1, method = "over", N = 10108)$data
+
+x=train1
+y=train1$Revenue
+library(e1071)
+model1 = naiveBayes(x,y)
+p<- predict(model1,test1,type="class")
+
+confusionMatrix(p,test1$Revenue)
+
+```
+
+
+```{r}
+#support vector machine (SVM) - model2
+
+# Split the data into a training set and a test set
+index2 = createDataPartition(fs$Revenue, p = 0.75, list = FALSE)
+train2 = fs[index2, ]
+test2 = fs[-index2, ]
+
+oversampling_onl = ovun.sample( Revenue ~ ., data = train2, method = "over", N = 10108)$data
+
+# Training the model
+model2 <- train(
+  Revenue ~ ., 
+  data = train2, 
+  method = "svmLinear",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneLength = 5
+)
+
+# Make predictions on the test set
+predictions = predict(model2, test2)
+
+# Evaluate the model
+confusionMatrix(predictions, test2$Revenue)
+
+```
+
+
+```{r}
+#DECISION TREE - model3
+# Split the data into a training set and a test set
+index3 = createDataPartition(fs$Revenue, p = 0.75, list = FALSE)
+train3 = fs[index3, ]
+test3 = fs[-index3, ]
+
+oversampling_onl = ovun.sample( Revenue ~ ., data = train3, method = "over", N = 10108)$data
+
+# Train the model
+model3 = train(Revenue ~ ., data = train3, method = "rpart",trControl = trainControl(method = "cv",number = 5),tuneLength = 5)
+
+# Make predictions on the test set
+predictions = predict(model3, test3)
+
+# Evaluate the model
+confusionMatrix(predictions, test3$Revenue)
+
+```
+
+
+```{r}
+#decision tree plot
+tree<- rpart(Revenue~., data = train3, method = 'class')
+rpart.plot(tree)
+```
+
+```{r}
+#KNN - model4
+library(class)
+library(caret)
+
+fs$Revenue=as.numeric(onl$Revenue)
+
+str(fs)
+
+
+onl_norm = fs
+na.omit(onl_norm)
+onl_norm = subset(onl_norm, select = -c(Month,VisitorType) )
+
+str(onl_norm)
+##Generate a random number that is 90% of the total number of rows in dataset.
+ ran <- sample(1:nrow(onl_norm), 0.9 * nrow(onl_norm)) 
+ 
+ ##the normalization function is created
+ nor <-function(x) { (x -min(x))/(max(x)-min(x))   }
+ 
+norm <- as.data.frame(lapply(onl_norm[,colnames(onl_norm)[colnames(onl_norm) != 'Revenue']], nor))
+ 
+train_knn <- norm[ran,] 
+test_knn <- norm[-ran,] 
+ 
+target_category <- onl_norm[ran,11]
+test_category <- onl_norm[-ran,11]
+ ##run knn function
+ model4 <- knn(train_knn,test_knn,cl=target_category,k=13)
+
+ #source code - https://towardsdatascience.com/k-nearest-neighbors-algorithm-with-examples-in-r-simply-explained-knn-1f2c88da405c
+ 
+confusionMatrix(table(model4,test_category))
+ 
+```
+
+
+```{r}
+#Analysis of variance
+lg_mod<-glm(Revenue ~. ,data=onl,family = binomial(link = "logit"))
+
+anova(lg_mod,test = "Chisq")
+
+```
+
+```{r}
+#LOGISTICS REGRESSION - model5
+index5 = createDataPartition(fs$Revenue, p=0.75, list=FALSE)
+train5 = fs[ index2,]
+test5 =  fs[-index2,]
+
+model5 = glm(Revenue~., data=train2,family = binomial(link = "logit"))
+
+pred =  predict(model5,newdata = test2,type = "response")
+
+pred = as.numeric(pred)
+
+pred =as.factor(round(pred,0))
+                  
+test5$Revenue=as.numeric(test5$Revenue)
+confusionMatrix(table(pred,test5$Revenue))
+```
+
+
